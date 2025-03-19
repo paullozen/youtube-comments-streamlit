@@ -84,10 +84,18 @@ def get_video_comments(api_key, video_id, max_results=5000):
     progress_bar.empty()  # Remove a barra de progresso ao final
     return output_file, len(comments)
 
-def extract_video_id(video_url):
-    """Extrai o video_id a partir da URL"""
-    match = re.search(r"v=([a-zA-Z0-9_-]{11})", video_url)
-    return match.group(1) if match else None
+def extract_video_id(video_input):
+    """Extrai o video_id de diferentes formatos de URL"""
+    # Caso o usuário informe apenas o ID do vídeo
+    if re.fullmatch(r"^[a-zA-Z0-9_-]{11}$", video_input):
+        return video_input
+    
+    # Caso seja uma URL normal do YouTube
+    match = re.search(r"(?:v=|\/)([a-zA-Z0-9_-]{11})", video_input)
+    if match:
+        return match.group(1)
+
+    return None
 
 def zip_files(file_list, zip_filename="comentarios_coletados.zip"):
     """Cria um único arquivo ZIP contendo todos os arquivos coletados"""
@@ -111,7 +119,7 @@ if modo == "Canal":
     max_results_videos = st.number_input("Quantidade de vídeos para coletar", min_value=1, max_value=100, value=20)
     max_comments_per_video = st.number_input("Quantidade de comentários por vídeo", min_value=10, max_value=5000, value=2000)
 else:
-    video_url = st.text_input("Cole o link do vídeo", "https://www.youtube.com/watch?v=xxxxxxxxxxx")
+    video_input = st.text_input("Cole o link do vídeo ou apenas o ID", "https://www.youtube.com/watch?v=xxxxxxxxxxx")
 
 # Botão para iniciar a coleta
 if st.button("Iniciar Coleta"):
@@ -153,9 +161,9 @@ if st.button("Iniciar Coleta"):
                 st.error(f"Erro: {e}")
 
         elif modo == "Vídeo":
-            video_id = extract_video_id(video_url)
+            video_id = extract_video_id(video_input)
             if not video_id:
-                st.error("URL inválida! Certifique-se de que está no formato correto.")
+                st.error("URL ou ID inválido! Certifique-se de que está no formato correto.")
             else:
                 st.write(f"ID do vídeo encontrado: {video_id}")
                 st.write("Iniciando coleta de comentários...")
